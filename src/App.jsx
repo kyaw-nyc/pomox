@@ -384,10 +384,6 @@ function Footer({ theme, themeObj, onToggleTheme }) {
   return (
     <footer className={`${themeObj.footer} flex flex-col items-center gap-2`}>
       <div>Built with React & Tailwind v4 · Shortcuts: Space / R / N · Theme: T</div>
-      {/* Quick-access theme toggle on mobile */}
-      <button onClick={onToggleTheme} className="md:hidden px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-xs">
-        {theme === 'redesigned' ? 'Switch to Sunrise' : 'Switch to Midnight'}
-      </button>
     </footer>
   );
 }

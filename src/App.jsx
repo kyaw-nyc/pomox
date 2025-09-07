@@ -1,5 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+// Pomodoro React App — Theme Switcher (Redesigned Default Theme)
+// ✅ All features preserved. Default theme is now "redesigned" (cyan/emerald on deep slate).
+// You can still toggle to the warm "sunrise" theme. Press T or use the button.
+
 const BEEP_BASE64 =
   "data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAAACAAACcQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
@@ -16,6 +20,78 @@ const DEFAULTS = {
 const STORAGE_KEY = "pomox-kyaw-v1";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
+// ---- THEME TOKENS -----------------------------------------------------------
+const THEMES = {
+  redesigned: {
+    id: "redesigned",
+    bg: "min-h-screen w-full bg-gradient-to-br from-cyan-950 via-slate-900 to-emerald-950 text-slate-50",
+    cardA: "bg-slate-900/60 border border-cyan-500/30 rounded-3xl p-6 shadow-xl backdrop-blur",
+    cardB: "bg-slate-900/60 border border-emerald-500/30 rounded-3xl p-6 shadow-xl backdrop-blur",
+    h1: "text-2xl md:text-3xl font-extrabold tracking-tight text-cyan-100",
+    sub: "text-slate-300 text-sm md:text-base",
+    tabsWrap: "inline-flex rounded-2xl bg-slate-800/70 p-1 border border-cyan-500/30",
+    tabActive: "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-900 shadow",
+    tabIdle: "text-slate-200 hover:bg-slate-700/50",
+    statWrap: "rounded-2xl bg-slate-800/70 border border-slate-700 p-3",
+    statLabel: "text-xs text-cyan-300",
+    statValue: "text-lg font-bold text-emerald-300",
+    kbd: "kbd",
+    btnPrimary: "bg-cyan-400 text-slate-900 border-cyan-300 hover:bg-cyan-300",
+    btnSecondary: "bg-emerald-400 text-slate-900 border-emerald-300 hover:bg-emerald-300",
+    btnGhost: "bg-slate-800/50 text-slate-200 border border-slate-600 hover:bg-slate-700",
+    fieldLabel: "text-sm text-slate-200 mb-1",
+    input: "w-24 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400",
+    toggleOn: "bg-emerald-400",
+    toggleOff: "bg-slate-600",
+    ringTrack: "rgba(255,255,255,0.15)",
+    ringGradId: "grad-redesigned",
+    ringStops: [
+      { offset: "0%", color: "#22d3ee" },
+      { offset: "100%", color: "#34d399" },
+    ],
+    headerBadge: "hidden",
+    headerBtn: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
+    footer: "mt-10 text-xs text-slate-400 text-center",
+    switcher: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
+    highlightText: "text-slate-300",
+  },
+  sunrise: {
+    id: "sunrise",
+    bg: "min-h-screen w-full bg-gradient-to-br from-amber-50 via-rose-50 to-white text-slate-800",
+    cardA: "bg-white rounded-3xl p-6 shadow-xl border border-amber-100",
+    cardB: "bg-white rounded-3xl p-6 shadow-xl border border-rose-100",
+    h1: "mt-2 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900",
+    sub: "text-slate-600 text-sm md:text-base",
+    tabsWrap: "inline-flex rounded-2xl bg-amber-50 p-1 border border-amber-200",
+    tabActive: "bg-white text-slate-900 shadow-sm border border-amber-200",
+    tabIdle: "text-slate-600 hover:bg-white/60",
+    statWrap: "rounded-2xl bg-amber-50 border border-amber-200 p-3",
+    statLabel: "text-xs text-amber-700",
+    statValue: "text-lg font-bold text-slate-900",
+    kbd: "kbd",
+    btnPrimary: "bg-amber-500 text-white border-amber-400 hover:bg-amber-400",
+    btnSecondary: "bg-rose-500 text-white border-rose-400 hover:bg-rose-400",
+    btnGhost: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+    fieldLabel: "text-sm text-slate-600 mb-1",
+    input: "w-24 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-200",
+    toggleOn: "bg-rose-500",
+    toggleOff: "bg-slate-200",
+    ringTrack: "#f1f5f9",
+    ringGradId: "grad-sunrise",
+    ringStops: [
+      { offset: "0%", color: "#fb923c" },
+      { offset: "100%", color: "#f43f5e" },
+    ],
+    headerBadge:
+      "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-200 to-rose-200 text-amber-800 px-3 py-1 text-xs font-medium border border-amber-300/50",
+    headerBtn:
+      "px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-slate-800 text-sm shadow-sm",
+    footer: "mt-10 text-xs text-slate-500 text-center",
+    switcher: "px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-slate-800 text-sm shadow-sm",
+    highlightText: "text-slate-600",
+  },
+};
+
 function useLocalStorageState(key, initial) {
   const [state, setState] = useState(() => {
     try {
@@ -26,18 +102,14 @@ function useLocalStorageState(key, initial) {
     }
   });
   useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {}
+    try { localStorage.setItem(key, JSON.stringify(state)); } catch {}
   }, [key, state]);
   return [state, setState];
 }
 
 function useInterval(callback, delay) {
   const saved = useRef(callback);
-  useEffect(() => {
-    saved.current = callback;
-  }, [callback]);
+  useEffect(() => { saved.current = callback; }, [callback]);
   useEffect(() => {
     if (delay == null) return;
     const id = setInterval(() => saved.current(), delay);
@@ -46,18 +118,12 @@ function useInterval(callback, delay) {
 }
 
 function formatTime(totalSeconds) {
-  const m = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const s = Math.floor(totalSeconds % 60)
-    .toString()
-    .padStart(2, "0");
+  const m = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
+  const s = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
 
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
+function clamp(n, min, max) { return Math.max(min, Math.min(max, n)); }
 
 const MODES = [
   { id: "focus", label: "Pomodoro" },
@@ -68,54 +134,36 @@ const MODES = [
 export default function App() {
   const [settings, setSettings] = useLocalStorageState(STORAGE_KEY + ":settings", DEFAULTS);
   const [mode, setMode] = useLocalStorageState(STORAGE_KEY + ":mode", "focus");
-  const [cycleCount, setCycleCount] = useLocalStorageState(STORAGE_KEY + ":cycles", 0); // completed pomodoros in current block
+  const [cycleCount, setCycleCount] = useLocalStorageState(STORAGE_KEY + ":cycles", 0);
   const [isRunning, setIsRunning] = useState(false);
-  const [remaining, setRemaining] = useLocalStorageState(
-    STORAGE_KEY + ":remaining",
-    settings.pomodoroMin * 60
-  );
+  const [remaining, setRemaining] = useLocalStorageState(STORAGE_KEY + ":remaining", settings.pomodoroMin * 60);
+  const [theme, setTheme] = useLocalStorageState(STORAGE_KEY + ":theme", "redesigned");
   const audioRef = useRef(null);
 
-  // Stats: track completed focus minutes per day
+  const themeObj = THEMES[theme] || THEMES.redesigned;
+
   const [stats, setStats] = useLocalStorageState(STORAGE_KEY + ":stats", {
     [todayKey()]: { focusSec: 0, sessions: 0 },
   });
 
-  // Sync remaining when settings or mode changes (only if not running)
   useEffect(() => {
     if (isRunning) return;
-    const map = {
-      focus: settings.pomodoroMin,
-      short: settings.shortMin,
-      long: settings.longMin,
-    };
+    const map = { focus: settings.pomodoroMin, short: settings.shortMin, long: settings.longMin };
     setRemaining(map[mode] * 60);
   }, [mode, settings.pomodoroMin, settings.shortMin, settings.longMin]);
 
-  // Request Notification permission once if enabled
   useEffect(() => {
     if (!settings.notify || !("Notification" in window)) return;
-    if (Notification.permission === "default") {
-      Notification.requestPermission();
-    }
+    if (Notification.permission === "default") Notification.requestPermission();
   }, [settings.notify]);
 
-  // Tick
-  useInterval(
-    () => {
-      setRemaining((prev) => {
-        if (prev <= 1) {
-          // Session finished
-          onFinish();
-          return 0;
-        }
-        // Increment stats during focus
-        if (mode === "focus") incrementTodayFocus(1);
-        return prev - 1;
-      });
-    },
-    isRunning ? 1000 : null
-  );
+  useInterval(() => {
+    setRemaining((prev) => {
+      if (prev <= 1) { onFinish(); return 0; }
+      if (mode === "focus") incrementTodayFocus(1);
+      return prev - 1;
+    });
+  }, isRunning ? 1000 : null);
 
   function incrementTodayFocus(deltaSec) {
     setStats((prev) => {
@@ -134,27 +182,18 @@ export default function App() {
   }
 
   function ringAndNotify(title, body) {
-    try {
-      if (settings.sound && audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => {});
-      }
-    } catch {}
+    try { if (settings.sound && audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}); } } catch {}
     if (settings.notify && "Notification" in window && Notification.permission === "granted") {
-      try {
-        new Notification(title, { body });
-      } catch {}
+      try { new Notification(title, { body }); } catch {}
     }
   }
 
   function onFinish() {
     setIsRunning(false);
-    // Update sessions/statistics
     if (mode === "focus") {
       setCycleCount((c) => c + 1);
       incSessionsToday();
       ringAndNotify("Focus complete", "Time for a break!");
-      // Decide next mode
       const nextIsLong = (cycleCount + 1) % settings.longEvery === 0;
       const nextMode = nextIsLong ? "long" : "short";
       setMode(nextMode);
@@ -169,47 +208,30 @@ export default function App() {
     }
   }
 
-  // Controls
   const startPause = () => setIsRunning((r) => !r);
   const reset = () => {
-    const map = {
-      focus: settings.pomodoroMin,
-      short: settings.shortMin,
-      long: settings.longMin,
-    };
+    const map = { focus: settings.pomodoroMin, short: settings.shortMin, long: settings.longMin };
     setRemaining(map[mode] * 60);
     setIsRunning(false);
   };
-  const skip = () => {
-    // Finish the current session immediately (works even if paused)
-    setIsRunning(false);
-    onFinish();
-  };
+  const skip = () => { setIsRunning(false); onFinish(); };
 
-  // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e) => {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.code === "Space") {
-        e.preventDefault();
-        startPause();
-      } else if (e.key.toLowerCase() === "r") {
-        reset();
-      } else if (e.key.toLowerCase() === "n") {
-        skip();
-      }
+      if (e.code === "Space") { e.preventDefault(); startPause(); }
+      else if (e.key.toLowerCase() === "r") { reset(); }
+      else if (e.key.toLowerCase() === "n") { skip(); }
+      else if (e.key.toLowerCase() === "t") { toggleTheme(); }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [startPause]);
+  }, [startPause, theme]);
 
-  // Derived values
+  function toggleTheme() { setTheme(theme === "redesigned" ? "sunrise" : "redesigned"); }
+
   const total = useMemo(() => {
-    const map = {
-      focus: settings.pomodoroMin * 60,
-      short: settings.shortMin * 60,
-      long: settings.longMin * 60,
-    };
+    const map = { focus: settings.pomodoroMin * 60, short: settings.shortMin * 60, long: settings.longMin * 60 };
     return map[mode];
   }, [mode, settings]);
   const pct = clamp(1 - remaining / Math.max(total, 1), 0, 1);
@@ -217,108 +239,73 @@ export default function App() {
   const day = stats[todayKey()] || { focusSec: 0, sessions: 0 };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-indigo-950 via-slate-900 to-fuchsia-950 text-slate-50 flex items-center justify-center p-4">
+    <div className={`${themeObj.bg} flex items-center justify-center p-5`}>
       <audio ref={audioRef} src={BEEP_BASE64} preload="auto" />
-      <div className="w-full max-w-4xl">
-        <Header />
+      <div className="w-full max-w-5xl">
+        <Header theme={theme} themeObj={themeObj} onToggleTheme={toggleTheme} />
 
         <div className="grid md:grid-cols-2 gap-6 mt-6">
           {/* LEFT: Timer Card */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl backdrop-blur">
-            <ModeTabs mode={mode} setMode={(id) => { setMode(id); }} />
+          <div className={themeObj.cardA}>
+            <ModeTabs themeObj={themeObj} mode={mode} setMode={(id) => { setMode(id); }} isRunning={isRunning} />
 
             <div className="mt-6 flex items-center gap-6">
-              <ProgressRing size={220} stroke={14} progress={pct}>
+              <ProgressRing size={230} stroke={16} progress={pct} themeObj={themeObj}>
                 <div className="text-center">
-                  <div className="text-[3.25rem] font-semibold tabular-nums drop-shadow">
+                  <div className={`text-[3.25rem] font-semibold tabular-nums tracking-tight ${theme === 'redesigned' ? 'text-slate-50 drop-shadow' : 'text-slate-900'}`}>
                     {formatTime(remaining)}
                   </div>
-                  <div className="text-sm text-slate-300">{labelForMode(mode)}</div>
+                  <div className={`text-sm ${themeObj.highlightText}`}>{labelForMode(mode)}</div>
                 </div>
               </ProgressRing>
 
               <div className="flex-1 space-y-3">
-                <ControlButton onClick={startPause} variant={isRunning ? "secondary" : "primary"}>
+                <ControlButton themeObj={themeObj} onClick={startPause} variant={isRunning ? "secondary" : "primary"}>
                   {isRunning ? "Pause" : "Start"}
                 </ControlButton>
                 <div className="flex gap-3">
-                  <ControlButton onClick={reset} variant="ghost">Reset</ControlButton>
-                  <ControlButton onClick={skip} variant="ghost">Skip</ControlButton>
+                  <ControlButton themeObj={themeObj} onClick={reset} variant="ghost">Reset</ControlButton>
+                  <ControlButton themeObj={themeObj} onClick={skip} variant="ghost">Skip</ControlButton>
                 </div>
-                <div className="text-xs text-slate-300">
-                  Shortcuts: <kbd className="kbd">Space</kbd>, <kbd className="kbd">R</kbd>, <kbd className="kbd">N</kbd>
+                <div className={`text-xs ${themeObj.highlightText}`}>
+                  Shortcuts: <kbd className={themeObj.kbd}>Space</kbd>, <kbd className={themeObj.kbd}>R</kbd>, <kbd className={themeObj.kbd}>N</kbd>, <kbd className={themeObj.kbd}>T</kbd> (theme)
                 </div>
               </div>
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-4">
-              <Stat label="Cycles Done" value={`${cycleCount % settings.longEvery}/${settings.longEvery}`} />
-              <Stat label="Focus Today" value={`${Math.floor(day.focusSec / 60)}m`} />
-              <Stat label="Sessions Today" value={`${day.sessions}`} />
+              <Stat themeObj={themeObj} label="Cycles Done" value={`${cycleCount % settings.longEvery}/${settings.longEvery}`} />
+              <Stat themeObj={themeObj} label="Focus Today" value={`${Math.floor(day.focusSec / 60)}m`} />
+              <Stat themeObj={themeObj} label="Sessions Today" value={`${day.sessions}`} />
             </div>
           </div>
 
           {/* RIGHT: Settings */}
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl backdrop-blur">
-            <h2 className="text-lg font-semibold">Settings</h2>
+          <div className={themeObj.cardB}>
+            <h2 className={`text-lg font-semibold ${theme === 'redesigned' ? 'text-slate-50' : 'text-slate-900'}`}>Settings</h2>
             <div className="mt-4 space-y-5">
-              <NumberField
-                label="Pomodoro (min)"
-                value={settings.pomodoroMin}
-                onChange={(v) => setSettings({ ...settings, pomodoroMin: clamp(v, 1, 180) })}
-              />
-              <NumberField
-                label="Short Break (min)"
-                value={settings.shortMin}
-                onChange={(v) => setSettings({ ...settings, shortMin: clamp(v, 1, 60) })}
-              />
-              <NumberField
-                label="Long Break (min)"
-                value={settings.longMin}
-                onChange={(v) => setSettings({ ...settings, longMin: clamp(v, 1, 90) })}
-              />
-              <NumberField
-                label="Long Break Every"
-                suffix="sessions"
-                value={settings.longEvery}
-                onChange={(v) => setSettings({ ...settings, longEvery: clamp(v, 2, 12) })}
-              />
+              <NumberField themeObj={themeObj} label="Pomodoro (min)" value={settings.pomodoroMin} onChange={(v) => setSettings({ ...settings, pomodoroMin: clamp(v, 1, 180) })} />
+              <NumberField themeObj={themeObj} label="Short Break (min)" value={settings.shortMin} onChange={(v) => setSettings({ ...settings, shortMin: clamp(v, 1, 60) })} />
+              <NumberField themeObj={themeObj} label="Long Break (min)" value={settings.longMin} onChange={(v) => setSettings({ ...settings, longMin: clamp(v, 1, 90) })} />
+              <NumberField themeObj={themeObj} label="Long Break Every" suffix="sessions" value={settings.longEvery} onChange={(v) => setSettings({ ...settings, longEvery: clamp(v, 2, 12) })} />
 
-              <ToggleField
-                label="Auto-start next session"
-                checked={settings.autoStart}
-                onChange={(c) => setSettings({ ...settings, autoStart: c })}
-              />
-              <ToggleField
-                label="Play sound on end"
-                checked={settings.sound}
-                onChange={(c) => setSettings({ ...settings, sound: c })}
-              />
-              <ToggleField
-                label="Desktop notifications"
-                checked={settings.notify}
-                onChange={(c) => setSettings({ ...settings, notify: c })}
-              />
+              <ToggleField themeObj={themeObj} label="Auto-start next session" checked={settings.autoStart} onChange={(c) => setSettings({ ...settings, autoStart: c })} />
+              <ToggleField themeObj={themeObj} label="Play sound on end" checked={settings.sound} onChange={(c) => setSettings({ ...settings, sound: c })} />
+              <ToggleField themeObj={themeObj} label="Desktop notifications" checked={settings.notify} onChange={(c) => setSettings({ ...settings, notify: c })} />
             </div>
 
             <div className="mt-6 flex gap-3">
               <button
-                className="px-3 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-200 text-sm"
-                onClick={() => {
-                  localStorage.removeItem(STORAGE_KEY + ":settings");
-                  window.location.reload();
-                }}
+                className={theme === 'redesigned' ? 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm' : 'px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-slate-800 text-sm shadow-sm'}
+                onClick={() => { localStorage.removeItem(STORAGE_KEY + ":settings"); window.location.reload(); }}
               >
                 Reset Settings
               </button>
               <button
-                className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/30 text-amber-200 text-sm"
+                className={theme === 'redesigned' ? 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm' : 'px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-slate-800 text-sm shadow-sm'}
                 onClick={() => {
-                  // Clear daily stats + cycle counter
                   localStorage.removeItem(STORAGE_KEY + ":stats");
                   localStorage.removeItem(STORAGE_KEY + ":cycles");
-
-                  // Reset in-memory state so UI updates immediately
                   setStats({ [todayKey()]: { focusSec: 0, sessions: 0 } });
                   setCycleCount(0);
                 }}
@@ -329,56 +316,69 @@ export default function App() {
           </div>
         </div>
 
-        <Footer />
+        <Footer themeObj={themeObj} />
       </div>
     </div>
   );
 }
 
-function labelForMode(mode) {
-  return mode === "focus" ? "Stay focused" : mode === "short" ? "Quick breather" : "Deep break";
-}
+function labelForMode(mode) { return mode === "focus" ? "Stay focused" : mode === "short" ? "Quick breather" : "Deep break"; }
 
-function Header() {
+function Header({ theme, themeObj, onToggleTheme }) {
   return (
     <header className="flex items-center justify-between gap-4">
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Pomodoro</h1>
-        <p className="text-slate-300 text-sm md:text-base">A sleek, keyboard-friendly timer with cycles, stats, and notifications.</p>
+        {theme === 'sunrise' ? (
+          <div className={themeObj.headerBadge}><span>Sunrise Edition</span></div>
+        ) : theme === 'redesigned' ? (
+          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-900 px-3 py-1 text-xs font-medium border border-cyan-300/50 mb-2"><span>Midnight Edition</span></div>
+        ) : null}
+        <h1 className={themeObj.h1}>Pomodoro — Focus with Flow</h1>
+        <p className={themeObj.sub}>Switch between Midnight (default) and Sunrise themes anytime.</p>
       </div>
-      <a
-        href="https://github.com/kyaw-nyc/pomox"
-        target="_blank"
-        rel="noreferrer"
-        className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-sm"
-      >
-        ⭐ Star this on GitHub
-      </a>
+      <div className="flex gap-2">
+        <button onClick={onToggleTheme} className={themeObj.switcher}>
+          {theme === 'redesigned' ? 'Switch to Sunrise' : 'Switch to Midnight'} (T)
+        </button>
+        <a
+          href="https://github.com/kyaw-nyc/pomox"
+          target="_blank"
+          rel="noreferrer"
+          className={themeObj.headerBtn}
+        >
+          ⭐ Star on GitHub
+        </a>
+      </div>
     </header>
   );
 }
 
-function Footer() {
+function Footer({ themeObj }) {
   return (
-    <footer className="mt-10 text-xs text-slate-400 text-center">
+    <footer className={themeObj.footer}>
+      Built with React & Tailwind v4 · Shortcuts: Space / R / N · Theme: T
     </footer>
   );
 }
 
-function ModeTabs({ mode, setMode }) {
+function ModeTabs({ themeObj, mode, setMode, isRunning }) {
   return (
-    <div className="inline-flex rounded-xl bg-white/10 p-1 border border-white/10">
+    <div className={themeObj.tabsWrap}>
       {MODES.map((m) => {
         const active = m.id === mode;
+        const disabled = isRunning;
         return (
           <button
             key={m.id}
-            onClick={() => setMode(m.id)}
+            onClick={() => { if (!disabled) setMode(m.id); }}
+            disabled={disabled}
+            aria-disabled={disabled}
+            tabIndex={disabled ? -1 : 0}
+            title={disabled ? "Pause or reset to change mode" : ""}
             className={
               "px-3 py-1.5 rounded-lg text-sm transition " +
-              (active
-                ? "bg-white text-slate-900 shadow"
-                : "text-slate-200 hover:bg-white/10")
+              (active ? themeObj.tabActive : themeObj.tabIdle) +
+              (disabled ? " opacity-50 cursor-not-allowed" : "")
             }
           >
             {m.label}
@@ -389,41 +389,34 @@ function ModeTabs({ mode, setMode }) {
   );
 }
 
-function ControlButton({ children, onClick, variant = "primary" }) {
-  const base =
-    "w-full px-4 py-2 rounded-xl text-base font-medium transition border text-center";
-  const styles = {
-    primary:
-      "bg-emerald-400 text-slate-900 border-emerald-300 hover:bg-emerald-300",
-    secondary:
-      "bg-amber-400 text-slate-900 border-amber-300 hover:bg-amber-300",
-    ghost: "bg-white/5 text-slate-200 border-white/10 hover:bg-white/10",
-  };
+function ControlButton({ themeObj, children, onClick, variant = "primary" }) {
+  const base = "w-full px-4 py-2 rounded-xl text-base font-semibold transition border text-center";
+  const map = { primary: themeObj.btnPrimary, secondary: themeObj.btnSecondary, ghost: themeObj.btnGhost };
   return (
-    <button className={`${base} ${styles[variant]}`} onClick={onClick}>
+    <button className={`${base} ${map[variant]}`} onClick={onClick}>
       {children}
     </button>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ themeObj, label, value }) {
   return (
-    <div className="rounded-xl bg-black/20 border border-white/10 p-3">
-      <div className="text-xs text-slate-400">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div className={themeObj.statWrap}>
+      <div className={themeObj.statLabel}>{label}</div>
+      <div className={themeObj.statValue}>{value}</div>
     </div>
   );
 }
 
-function NumberField({ label, value, onChange, suffix }) {
+function NumberField({ themeObj, label, value, onChange, suffix }) {
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
   return (
     <label className="block">
-      <div className="text-sm text-slate-300 mb-1">{label}</div>
+      <div className={themeObj.fieldLabel}>{label}</div>
       <div className="flex items-center gap-2">
         <input
-          className="w-24 px-3 py-2 rounded-xl bg-black/30 border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
+          className={themeObj.input}
           type="number"
           min={1}
           max={999}
@@ -435,55 +428,40 @@ function NumberField({ label, value, onChange, suffix }) {
             onChange(n);
           }}
         />
-        {suffix && <span className="text-sm text-slate-400">{suffix}</span>}
+        {suffix && <span className={themeObj.highlightText}>{suffix}</span>}
       </div>
     </label>
   );
 }
 
-function ToggleField({ label, checked, onChange }) {
+function ToggleField({ themeObj, label, checked, onChange }) {
   return (
     <label className="flex items-center justify-between gap-3 select-none">
-      <span className="text-sm text-slate-300">{label}</span>
+      <span className={themeObj.highlightText}>{label}</span>
       <button
         onClick={() => onChange(!checked)}
-        className={
-          "relative inline-flex h-7 w-12 items-center rounded-full transition " +
-          (checked ? "bg-emerald-400" : "bg-white/10")
-        }
+        className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${checked ? themeObj.toggleOn : themeObj.toggleOff}`}
         aria-pressed={checked}
       >
-        <span
-          className={
-            "inline-block h-5 w-5 transform rounded-full bg-white transition " +
-            (checked ? "translate-x-6" : "translate-x-1")
-          }
-        />
+        <span className={`inline-block h-5 w-5 transform rounded-full bg-white ${checked ? 'translate-x-6' : 'translate-x-1'} transition`} />
       </button>
     </label>
   );
 }
 
-function ProgressRing({ size = 200, stroke = 12, progress = 0, children }) {
+function ProgressRing({ size = 200, stroke = 12, progress = 0, children, themeObj }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * progress;
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="block">
+        <circle cx={size / 2} cy={size / 2} r={r} stroke={themeObj.ringTrack} strokeWidth={stroke} fill="none" />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={stroke}
-          fill="none"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="url(#grad)"
+          stroke={`url(#${themeObj.ringGradId})`}
           strokeWidth={stroke}
           fill="none"
           strokeDasharray={`${dash} ${c}`}
@@ -491,15 +469,17 @@ function ProgressRing({ size = 200, stroke = 12, progress = 0, children }) {
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
         <defs>
-          <linearGradient id="grad" x1="0" x2="1" y1="0" y2="1">
+          <linearGradient id="grad-redesigned" x1="0" x2="1" y1="0" y2="1">
             <stop offset="0%" stopColor="#22d3ee" />
-            <stop offset="100%" stopColor="#a78bfa" />
+            <stop offset="100%" stopColor="#34d399" />
+          </linearGradient>
+          <linearGradient id="grad-sunrise" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stopColor="#fb923c" />
+            <stop offset="100%" stopColor="#f43f5e" />
           </linearGradient>
         </defs>
       </svg>
-      <div className="absolute inset-0 grid place-items-center">
-        {children}
-      </div>
+      <div className="absolute inset-0 grid place-items-center">{children}</div>
     </div>
   );
 }

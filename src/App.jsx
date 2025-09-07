@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-// Pomodoro React App — Theme Switcher (Redesigned Default Theme)
-// ✅ All features preserved. Default theme is now "redesigned" (cyan/emerald on deep slate).
-// You can still toggle to the warm "sunrise" theme. Press T or use the button.
+// Pomodoro React App — Theme Switcher (Mobile-Responsive)
+// ✅ All features preserved. Default theme = Midnight ("redesigned").
+// 📱 This version adds mobile responsiveness: smaller timer ring on small screens,
+// stacked header/actions, fluid inputs, and full-width tabs.
 
 const BEEP_BASE64 =
   "data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAAACAAACcQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
@@ -20,78 +21,7 @@ const DEFAULTS = {
 const STORAGE_KEY = "pomox-kyaw-v1";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
-// ---- THEME TOKENS -----------------------------------------------------------
-const THEMES = {
-  redesigned: {
-    id: "redesigned",
-    bg: "min-h-screen w-full bg-gradient-to-br from-cyan-950 via-slate-900 to-emerald-950 text-slate-50",
-    cardA: "bg-slate-900/60 border border-cyan-500/30 rounded-3xl p-6 shadow-xl backdrop-blur",
-    cardB: "bg-slate-900/60 border border-emerald-500/30 rounded-3xl p-6 shadow-xl backdrop-blur",
-    h1: "text-2xl md:text-3xl font-extrabold tracking-tight text-cyan-100",
-    sub: "text-slate-300 text-sm md:text-base",
-    tabsWrap: "inline-flex rounded-2xl bg-slate-800/70 p-1 border border-cyan-500/30",
-    tabActive: "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-900 shadow",
-    tabIdle: "text-slate-200 hover:bg-slate-700/50",
-    statWrap: "rounded-2xl bg-slate-800/70 border border-slate-700 p-3",
-    statLabel: "text-xs text-cyan-300",
-    statValue: "text-lg font-bold text-emerald-300",
-    kbd: "kbd",
-    btnPrimary: "bg-cyan-400 text-slate-900 border-cyan-300 hover:bg-cyan-300",
-    btnSecondary: "bg-emerald-400 text-slate-900 border-emerald-300 hover:bg-emerald-300",
-    btnGhost: "bg-slate-800/50 text-slate-200 border border-slate-600 hover:bg-slate-700",
-    fieldLabel: "text-sm text-slate-200 mb-1",
-    input: "w-24 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400",
-    toggleOn: "bg-emerald-400",
-    toggleOff: "bg-slate-600",
-    ringTrack: "rgba(255,255,255,0.15)",
-    ringGradId: "grad-redesigned",
-    ringStops: [
-      { offset: "0%", color: "#22d3ee" },
-      { offset: "100%", color: "#34d399" },
-    ],
-    headerBadge: "hidden",
-    headerBtn: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
-    footer: "mt-10 text-xs text-slate-400 text-center",
-    switcher: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
-    highlightText: "text-slate-300",
-  },
-  sunrise: {
-    id: "sunrise",
-    bg: "min-h-screen w-full bg-gradient-to-br from-amber-50 via-rose-50 to-white text-slate-800",
-    cardA: "bg-white rounded-3xl p-6 shadow-xl border border-amber-100",
-    cardB: "bg-white rounded-3xl p-6 shadow-xl border border-rose-100",
-    h1: "mt-2 text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900",
-    sub: "text-slate-600 text-sm md:text-base",
-    tabsWrap: "inline-flex rounded-2xl bg-amber-50 p-1 border border-amber-200",
-    tabActive: "bg-white text-slate-900 shadow-sm border border-amber-200",
-    tabIdle: "text-slate-600 hover:bg-white/60",
-    statWrap: "rounded-2xl bg-amber-50 border border-amber-200 p-3",
-    statLabel: "text-xs text-amber-700",
-    statValue: "text-lg font-bold text-slate-900",
-    kbd: "kbd",
-    btnPrimary: "bg-amber-500 text-white border-amber-400 hover:bg-amber-400",
-    btnSecondary: "bg-rose-500 text-white border-rose-400 hover:bg-rose-400",
-    btnGhost: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
-    fieldLabel: "text-sm text-slate-600 mb-1",
-    input: "w-24 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-200",
-    toggleOn: "bg-rose-500",
-    toggleOff: "bg-slate-200",
-    ringTrack: "#f1f5f9",
-    ringGradId: "grad-sunrise",
-    ringStops: [
-      { offset: "0%", color: "#fb923c" },
-      { offset: "100%", color: "#f43f5e" },
-    ],
-    headerBadge:
-      "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-200 to-rose-200 text-amber-800 px-3 py-1 text-xs font-medium border border-amber-300/50",
-    headerBtn:
-      "px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-slate-800 text-sm shadow-sm",
-    footer: "mt-10 text-xs text-slate-500 text-center",
-    switcher: "px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-slate-800 text-sm shadow-sm",
-    highlightText: "text-slate-600",
-  },
-};
-
+// ---- Helpers ----------------------------------------------------------------
 function useLocalStorageState(key, initial) {
   const [state, setState] = useState(() => {
     try {
@@ -117,6 +47,18 @@ function useInterval(callback, delay) {
   }, [delay]);
 }
 
+function useMedia(query) {
+  const [matches, setMatches] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const onChange = () => setMatches(mq.matches);
+    onChange();
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, [query]);
+  return matches;
+}
+
 function formatTime(totalSeconds) {
   const m = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
   const s = Math.floor(totalSeconds % 60).toString().padStart(2, "0");
@@ -131,6 +73,72 @@ const MODES = [
   { id: "long", label: "Long Break" },
 ];
 
+// ---- Theme tokens ------------------------------------------------------------
+const THEMES = {
+  redesigned: {
+    id: "redesigned",
+    bg: "min-h-screen w-full bg-gradient-to-br from-cyan-950 via-slate-900 to-emerald-950 text-slate-50",
+    cardA: "bg-slate-900/60 border border-cyan-500/30 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur",
+    cardB: "bg-slate-900/60 border border-emerald-500/30 rounded-3xl p-4 md:p-6 shadow-xl backdrop-blur",
+    h1: "text-[1.5rem] md:text-3xl font-extrabold tracking-tight text-cyan-100",
+    sub: "text-slate-300 text-sm md:text-base",
+    tabsWrap: "inline-flex w-full rounded-2xl bg-slate-800/70 p-1 border border-cyan-500/30",
+    tabActive: "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-900 shadow",
+    tabIdle: "text-slate-200 hover:bg-slate-700/50",
+    statWrap: "rounded-2xl bg-slate-800/70 border border-slate-700 p-3",
+    statLabel: "text-xs text-cyan-300",
+    statValue: "text-base md:text-lg font-bold text-emerald-300",
+    kbd: "kbd",
+    btnPrimary: "bg-cyan-400 text-slate-900 border-cyan-300 hover:bg-cyan-300",
+    btnSecondary: "bg-emerald-400 text-slate-900 border-emerald-300 hover:bg-emerald-300",
+    btnGhost: "bg-slate-800/50 text-slate-200 border border-slate-600 hover:bg-slate-700",
+    fieldLabel: "text-sm text-slate-200 mb-1",
+    input: "w-full md:w-24 px-3 py-2 rounded-xl bg-slate-800 border border-slate-600 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400",
+    toggleOn: "bg-emerald-400",
+    toggleOff: "bg-slate-600",
+    ringTrack: "rgba(255,255,255,0.15)",
+    ringGradId: "grad-redesigned",
+    headerBadge:
+      "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-900 px-3 py-1 text-xs font-medium border border-cyan-300/50 mb-2",
+    headerBtn: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
+    footer: "mt-10 text-xs text-slate-400 text-center",
+    switcher: "px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm",
+    highlightText: "text-slate-300",
+  },
+  sunrise: {
+    id: "sunrise",
+    bg: "min-h-screen w-full bg-gradient-to-br from-amber-50 via-rose-50 to-white text-slate-800",
+    cardA: "bg-white rounded-3xl p-4 md:p-6 shadow-xl border border-amber-100",
+    cardB: "bg-white rounded-3xl p-4 md:p-6 shadow-xl border border-rose-100",
+    h1: "mt-2 text-[1.5rem] md:text-3xl font-extrabold tracking-tight text-slate-900",
+    sub: "text-slate-600 text-sm md:text-base",
+    tabsWrap: "inline-flex w-full rounded-2xl bg-amber-50 p-1 border border-amber-200",
+    tabActive: "bg-white text-slate-900 shadow-sm border border-amber-200",
+    tabIdle: "text-slate-600 hover:bg-white/60",
+    statWrap: "rounded-2xl bg-amber-50 border border-amber-200 p-3",
+    statLabel: "text-xs text-amber-700",
+    statValue: "text-base md:text-lg font-bold text-slate-900",
+    kbd: "kbd",
+    btnPrimary: "bg-amber-500 text-white border-amber-400 hover:bg-amber-400",
+    btnSecondary: "bg-rose-500 text-white border-rose-400 hover:bg-rose-400",
+    btnGhost: "bg-white text-slate-700 border-slate-200 hover:bg-slate-50",
+    fieldLabel: "text-sm text-slate-600 mb-1",
+    input: "w-full md:w-24 px-3 py-2 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-200",
+    toggleOn: "bg-rose-500",
+    toggleOff: "bg-slate-200",
+    ringTrack: "#f1f5f9",
+    ringGradId: "grad-sunrise",
+    headerBadge:
+      "inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-amber-200 to-rose-200 text-amber-800 px-3 py-1 text-xs font-medium border border-amber-300/50 mb-2",
+    headerBtn:
+      "px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-slate-800 text-sm shadow-sm",
+    footer: "mt-10 text-xs text-slate-500 text-center",
+    switcher: "px-3 py-2 rounded-xl bg-white hover:bg-rose-50 border border-rose-200 text-slate-800 text-sm shadow-sm",
+    highlightText: "text-slate-600",
+  },
+};
+
+// ---- App --------------------------------------------------------------------
 export default function App() {
   const [settings, setSettings] = useLocalStorageState(STORAGE_KEY + ":settings", DEFAULTS);
   const [mode, setMode] = useLocalStorageState(STORAGE_KEY + ":mode", "focus");
@@ -139,6 +147,10 @@ export default function App() {
   const [remaining, setRemaining] = useLocalStorageState(STORAGE_KEY + ":remaining", settings.pomodoroMin * 60);
   const [theme, setTheme] = useLocalStorageState(STORAGE_KEY + ":theme", "redesigned");
   const audioRef = useRef(null);
+
+  const isSmall = useMedia("(max-width: 768px)");
+  const ringSize = isSmall ? 180 : 230;
+  const ringStroke = isSmall ? 12 : 16;
 
   const themeObj = THEMES[theme] || THEMES.redesigned;
 
@@ -159,11 +171,18 @@ export default function App() {
 
   useInterval(() => {
     setRemaining((prev) => {
-      if (prev <= 1) { onFinish(); return 0; }
-      if (mode === "focus") incrementTodayFocus(1);
+      if (prev <= 1) {
+        onFinish();
+        return 0;
+      }
       return prev - 1;
     });
+
+    if (mode === "focus") {
+      incrementTodayFocus(1);
+    }
   }, isRunning ? 1000 : null);
+
 
   function incrementTodayFocus(deltaSec) {
     setStats((prev) => {
@@ -239,31 +258,33 @@ export default function App() {
   const day = stats[todayKey()] || { focusSec: 0, sessions: 0 };
 
   return (
-    <div className={`${themeObj.bg} flex items-center justify-center p-5`}>
+    <div className={`${themeObj.bg} flex items-center justify-center p-4 md:p-5`}>
       <audio ref={audioRef} src={BEEP_BASE64} preload="auto" />
       <div className="w-full max-w-5xl">
         <Header theme={theme} themeObj={themeObj} onToggleTheme={toggleTheme} />
 
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
+        <div className="grid md:grid-cols-2 gap-4 md:gap-6 mt-6">
           {/* LEFT: Timer Card */}
           <div className={themeObj.cardA}>
             <ModeTabs themeObj={themeObj} mode={mode} setMode={(id) => { setMode(id); }} isRunning={isRunning} />
 
-            <div className="mt-6 flex items-center gap-6">
-              <ProgressRing size={230} stroke={16} progress={pct} themeObj={themeObj}>
-                <div className="text-center">
-                  <div className={`text-[3.25rem] font-semibold tabular-nums tracking-tight ${theme === 'redesigned' ? 'text-slate-50 drop-shadow' : 'text-slate-900'}`}>
-                    {formatTime(remaining)}
+            <div className="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-6">
+              <div className="self-center">
+                <ProgressRing size={ringSize} stroke={ringStroke} progress={pct} themeObj={themeObj}>
+                  <div className="text-center">
+                    <div className={`text-5xl md:text-[3.25rem] font-semibold tabular-nums tracking-tight ${theme === 'redesigned' ? 'text-slate-50 drop-shadow' : 'text-slate-900'}`}>
+                      {formatTime(remaining)}
+                    </div>
+                    <div className={`text-xs md:text-sm ${themeObj.highlightText}`}>{labelForMode(mode)}</div>
                   </div>
-                  <div className={`text-sm ${themeObj.highlightText}`}>{labelForMode(mode)}</div>
-                </div>
-              </ProgressRing>
+                </ProgressRing>
+              </div>
 
               <div className="flex-1 space-y-3">
                 <ControlButton themeObj={themeObj} onClick={startPause} variant={isRunning ? "secondary" : "primary"}>
                   {isRunning ? "Pause" : "Start"}
                 </ControlButton>
-                <div className="flex gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <ControlButton themeObj={themeObj} onClick={reset} variant="ghost">Reset</ControlButton>
                   <ControlButton themeObj={themeObj} onClick={skip} variant="ghost">Skip</ControlButton>
                 </div>
@@ -273,9 +294,9 @@ export default function App() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-3 gap-4">
+            <div className="mt-6 grid grid-cols-3 gap-3 md:gap-4">
               <Stat themeObj={themeObj} label="Cycles Done" value={`${cycleCount % settings.longEvery}/${settings.longEvery}`} />
-              <Stat themeObj={themeObj} label="Focus Today" value={`${Math.floor(day.focusSec / 60)}m`} />
+              <Stat themeObj={themeObj} label="Focus Today" value={formatTime(day.focusSec)} />
               <Stat themeObj={themeObj} label="Sessions Today" value={`${day.sessions}`} />
             </div>
           </div>
@@ -294,7 +315,7 @@ export default function App() {
               <ToggleField themeObj={themeObj} label="Desktop notifications" checked={settings.notify} onChange={(c) => setSettings({ ...settings, notify: c })} />
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 className={theme === 'redesigned' ? 'px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-100 text-sm' : 'px-3 py-2 rounded-xl bg-white hover:bg-amber-50 border border-amber-200 text-slate-800 text-sm shadow-sm'}
                 onClick={() => { localStorage.removeItem(STORAGE_KEY + ":settings"); window.location.reload(); }}
@@ -316,7 +337,7 @@ export default function App() {
           </div>
         </div>
 
-        <Footer themeObj={themeObj} />
+        <Footer theme={theme} themeObj={themeObj} onToggleTheme={toggleTheme} />
       </div>
     </div>
   );
@@ -326,17 +347,17 @@ function labelForMode(mode) { return mode === "focus" ? "Stay focused" : mode ==
 
 function Header({ theme, themeObj, onToggleTheme }) {
   return (
-    <header className="flex items-center justify-between gap-4">
+    <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
       <div>
         {theme === 'sunrise' ? (
           <div className={themeObj.headerBadge}><span>Sunrise Edition</span></div>
-        ) : theme === 'redesigned' ? (
-          <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-900 px-3 py-1 text-xs font-medium border border-cyan-300/50 mb-2"><span>Midnight Edition</span></div>
-        ) : null}
+        ) : (
+          <div className={themeObj.headerBadge}><span>Midnight Edition</span></div>
+        )}
         <h1 className={themeObj.h1}>Pomodoro — Focus with Flow</h1>
         <p className={themeObj.sub}>Switch between Midnight (default) and Sunrise themes anytime.</p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button onClick={onToggleTheme} className={themeObj.switcher}>
           {theme === 'redesigned' ? 'Switch to Sunrise' : 'Switch to Midnight'} (T)
         </button>
@@ -353,10 +374,14 @@ function Header({ theme, themeObj, onToggleTheme }) {
   );
 }
 
-function Footer({ themeObj }) {
+function Footer({ theme, themeObj, onToggleTheme }) {
   return (
-    <footer className={themeObj.footer}>
-      Built with React & Tailwind v4 · Shortcuts: Space / R / N · Theme: T
+    <footer className={`${themeObj.footer} flex flex-col items-center gap-2`}>
+      <div>Built with React & Tailwind v4 · Shortcuts: Space / R / N · Theme: T</div>
+      {/* Quick-access theme toggle on mobile */}
+      <button onClick={onToggleTheme} className="md:hidden px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-xs">
+        {theme === 'redesigned' ? 'Switch to Sunrise' : 'Switch to Midnight'}
+      </button>
     </footer>
   );
 }
@@ -376,7 +401,7 @@ function ModeTabs({ themeObj, mode, setMode, isRunning }) {
             tabIndex={disabled ? -1 : 0}
             title={disabled ? "Pause or reset to change mode" : ""}
             className={
-              "px-3 py-1.5 rounded-lg text-sm transition " +
+              "flex-1 px-3 py-2 rounded-lg text-sm md:text-base transition text-center " +
               (active ? themeObj.tabActive : themeObj.tabIdle) +
               (disabled ? " opacity-50 cursor-not-allowed" : "")
             }
@@ -483,3 +508,4 @@ function ProgressRing({ size = 200, stroke = 12, progress = 0, children, themeOb
     </div>
   );
 }
+// ---- End App ----------------------------------------------------------------

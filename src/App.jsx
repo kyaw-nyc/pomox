@@ -169,6 +169,12 @@ export default function App() {
     if (Notification.permission === "default") Notification.requestPermission();
   }, [settings.notify]);
 
+  useEffect(() => {
+    const label =
+      mode === "focus" ? "Focus" : mode === "short" ? "Break" : "Long Break";
+    document.title = `${formatTime(remaining)} — ${label} | Pomox`;
+  }, [remaining, mode]);
+
   useInterval(() => {
     setRemaining((prev) => {
       if (prev <= 1) {

@@ -360,8 +360,8 @@ function Header({ theme, themeObj, onToggleTheme }) {
         ) : (
           <div className={themeObj.headerBadge}><span>Midnight Edition</span></div>
         )}
-        <h1 className={themeObj.h1}>Pomodoro — Focus with Flow</h1>
-        <p className={themeObj.sub}>Switch between Midnight (default) and Sunrise themes anytime.</p>
+        <h1 className={themeObj.h1}>Pomodoro</h1>
+        <p className={themeObj.sub}>Lock in!</p>
       </div>
       <div className="flex flex-wrap gap-2">
         <button onClick={onToggleTheme} className={themeObj.switcher}>

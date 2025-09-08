@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-// Pomodoro React App — Theme Switcher (Mobile-Responsive)
-// ✅ All features preserved. Default theme = Midnight ("redesigned").
-// 📱 This version adds mobile responsiveness: smaller timer ring on small screens,
-// stacked header/actions, fluid inputs, and full-width tabs.
-
 const BEEP_BASE64 =
   "data:audio/mp3;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAAAACAAACcQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
@@ -146,7 +141,11 @@ export default function App() {
   const [isRunning, setIsRunning] = useState(false);
   const [remaining, setRemaining] = useLocalStorageState(STORAGE_KEY + ":remaining", settings.pomodoroMin * 60);
   const [theme, setTheme] = useLocalStorageState(STORAGE_KEY + ":theme", "redesigned");
-  const audioRef = useRef(null);
+
+  // ---- Audio refs (added) ----
+  const audioRef = useRef(null);           // <audio> element
+  const audioCtxRef = useRef(null);        // Web Audio fallback
+  const audioUnlockedRef = useRef(false);  // iOS/Safari unlock flag
 
   const isSmall = useMedia("(max-width: 768px)");
   const ringSize = isSmall ? 180 : 230;
@@ -189,7 +188,6 @@ export default function App() {
     }
   }, isRunning ? 1000 : null);
 
-
   function incrementTodayFocus(deltaSec) {
     setStats((prev) => {
       const k = todayKey();
@@ -206,8 +204,75 @@ export default function App() {
     });
   }
 
+  // ---- Sound utils (added) --------------------------------------------------
+  async function unlockAudio() {
+    if (audioUnlockedRef.current) return;
+
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        if (!audioCtxRef.current) audioCtxRef.current = new Ctx();
+        if (audioCtxRef.current.state === "suspended") {
+          await audioCtxRef.current.resume();
+        }
+      }
+    } catch {}
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.muted = false;
+        audioRef.current.volume = 1;
+        audioRef.current.currentTime = 0;
+        await audioRef.current.play().catch(() => {});
+        audioRef.current.pause();
+      }
+    } catch {}
+
+    audioUnlockedRef.current = true;
+  }
+
+  async function webAudioBeep(duration = 0.5, freq = 880) {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = audioCtxRef.current || new Ctx();
+      audioCtxRef.current = ctx;
+      if (ctx.state === "suspended") await ctx.resume();
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + duration);
+    } catch {}
+  }
+
+  async function playBeep() {
+    if (!settings.sound) return;
+    try {
+      const el = audioRef.current;
+      if (el) {
+        el.muted = false;
+        el.volume = 1;
+        el.currentTime = 0;
+        await el.play();
+        return;
+      }
+    } catch {}
+    await webAudioBeep();
+  }
+
   function ringAndNotify(title, body) {
-    try { if (settings.sound && audioRef.current) { audioRef.current.currentTime = 0; audioRef.current.play().catch(() => {}); } } catch {}
+    // fire-and-forget
+    playBeep();
     if (settings.notify && "Notification" in window && Notification.permission === "granted") {
       try { new Notification(title, { body }); } catch {}
     }
@@ -233,20 +298,21 @@ export default function App() {
     }
   }
 
-  const startPause = () => setIsRunning((r) => !r);
+  const startPause = () => { unlockAudio(); setIsRunning((r) => !r); };
   const reset = () => {
+    unlockAudio();
     const map = { focus: settings.pomodoroMin, short: settings.shortMin, long: settings.longMin };
     setRemaining(map[mode] * 60);
     setIsRunning(false);
   };
-  const skip = () => { setIsRunning(false); onFinish(); };
+  const skip = () => { unlockAudio(); setIsRunning(false); onFinish(); };
 
   useEffect(() => {
     const onKey = (e) => {
       if (e.target instanceof HTMLInputElement) return;
-      if (e.code === "Space") { e.preventDefault(); startPause(); }
-      else if (e.key.toLowerCase() === "r") { reset(); }
-      else if (e.key.toLowerCase() === "n") { skip(); }
+      if (e.code === "Space") { e.preventDefault(); unlockAudio(); startPause(); }
+      else if (e.key.toLowerCase() === "r") { unlockAudio(); reset(); }
+      else if (e.key.toLowerCase() === "n") { unlockAudio(); skip(); }
       else if (e.key.toLowerCase() === "t") { toggleTheme(); }
     };
     window.addEventListener("keydown", onKey);
@@ -265,7 +331,8 @@ export default function App() {
 
   return (
     <div className={`${themeObj.bg} flex items-center justify-center p-4 md:p-5`}>
-      <audio ref={audioRef} src={BEEP_BASE64} preload="auto" />
+      {/* audio element with important attrs */}
+      <audio ref={audioRef} src={BEEP_BASE64} preload="auto" playsInline muted={false} />
       <div className="w-full max-w-5xl">
         <Header theme={theme} themeObj={themeObj} onToggleTheme={toggleTheme} />
 
@@ -380,7 +447,7 @@ function Header({ theme, themeObj, onToggleTheme }) {
   );
 }
 
-function Footer({ theme, themeObj, onToggleTheme }) {
+function Footer({ theme, themeObj }) {
   return (
     <footer className={`${themeObj.footer} flex flex-col items-center gap-2`}>
       <div>Built with React & Tailwind v4 · Shortcuts: Space / R / N · Theme: T</div>
